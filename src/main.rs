@@ -16,10 +16,13 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
     let mut loc: usize = 0;
 
     loop {
+        // read some bytes from the input
         let read_count = inp.read(&mut read_buf[..])?;
         if read_count == 0 {
             break; // loop
         }
+
+        // output bytes in a line-by-line manner
         for b in &read_buf[..read_count] {
             let b = *b;
             write_buf.push(b);
@@ -32,16 +35,18 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
         }
     }
 
+    // when the last line does not terminated with a line number
     if ! write_buf.is_empty() {
-        // if the file is not terminated by a new-line char, add it.
-        let b = write_buf.last().unwrap();
-        if ! (*b == EOL) {
-            write_buf.push(EOL);
-        }
+        assert!(*write_buf.last().unwrap() != EOL);
 
+        loc += 1;
+
+        // add a new-line char if the last line does not have it
+        write_buf.push(EOL);
+
+        // then output the line
         let mut outp = outp.lock().unwrap();
         outp.write_all(&write_buf)?;
-        loc += 1;
     }
 
     Ok(loc)
@@ -88,7 +93,7 @@ fn main() -> io::Result<()> {
         locs.push(loc);
     }
 
-    // Print summary (if requested)
+    // print summary (if requested)
     if args.summary {
         for (i, l) in locs.iter().enumerate() {
             eprintln!("[Info] {} lines read from input #{}: {}", l, i + 1, &args.input[i]);
