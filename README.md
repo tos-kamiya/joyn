@@ -20,6 +20,10 @@ In the case of `bash` shell, this usage can be accomplished with a command line 
 joyn <(command line 1) <(command line 2) ...
 ```
 
+## Samples
+
+&rarr; [Difference between command substitution joined with cat and joined with joyn](samples/command-subsutitution-joyn.md)
+
 ## Release history
 
 #### 0.2.0
