@@ -9,9 +9,11 @@ use clap::Parser;
 const READ_BUFFER_SIZE: usize = 64 * 1024;
 const EOL: u8 = b'\n';
 
-fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<()> {
+fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<usize> {
     let mut read_buf = [b'\0'; READ_BUFFER_SIZE];
     let mut write_buf = vec![];
+
+    let mut loc: usize = 0;
 
     loop {
         let read_count = inp.read(&mut read_buf[..])?;
@@ -22,6 +24,7 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<()
             let b = *b;
             write_buf.push(b);
             if b == EOL {
+                loc += 1;
                 let mut outp = outp.lock().unwrap();
                 outp.write_all(&write_buf)?;
                 write_buf.clear();
@@ -38,9 +41,10 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<()
 
         let mut outp = outp.lock().unwrap();
         outp.write_all(&write_buf)?;
+        loc += 1;
     }
 
-    Ok(())
+    Ok(loc)
 }
 
 #[derive(Parser, Debug)]
@@ -49,6 +53,10 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<()
 struct Cli {
     /// Input files
     input: Vec<String>,
+
+    /// Print LOC of each input file on exit
+    #[arg(short, long)]
+    summary: bool,
 }
 
 fn main() -> io::Result<()> {
@@ -56,8 +64,8 @@ fn main() -> io::Result<()> {
 
     // open input files
     let mut inps = vec![];
-    for input_file in args.input {
-        let f = File::open(&input_file).unwrap_or_else(|_err|
+    for input_file in args.input.iter() {
+        let f = File::open(input_file).unwrap_or_else(|_err|
            panic!("Error: can not open file: {}", &input_file));
         inps.push(f);
     }
@@ -74,8 +82,17 @@ fn main() -> io::Result<()> {
     }
 
     // wait until all threads terminates
+    let mut locs = vec![];
     for t in threads {
-        t.join().unwrap()?;
+        let loc = t.join().unwrap()?;
+        locs.push(loc);
+    }
+
+    // Print summary (if requested)
+    if args.summary {
+        for (i, l) in locs.iter().enumerate() {
+            eprintln!("[Info] {} lines read from input #{}: {}", l, i + 1, &args.input[i]);
+        }
     }
 
     Ok(())

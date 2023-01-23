@@ -19,3 +19,13 @@ In the case of `bash` shell, this usage can be accomplished with a command line 
 ```sh
 joyn <(command line 1) <(command line 2) ...
 ```
+
+## Release history
+
+#### 0.2.0
+
+* feat: new option --summary to print LOC of each input file on exit
+
+#### 0.1.0
+
+* First release
