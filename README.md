@@ -24,6 +24,8 @@ joyn <(command line 1) <(command line 2) ...
 
 &rarr; [Difference between command substitution joined with cat and joined with joyn](samples/command-subsutitution-joyn.md)
 
+&rarr; [Line-oriented handling](samples/line-oriented.md)
+
 ## Release history
 
 #### 0.2.4
