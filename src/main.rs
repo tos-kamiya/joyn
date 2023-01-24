@@ -22,13 +22,13 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
             break; // loop
         }
 
+        // output lines when the read bytes contains new-line chars
         let contains_newline = read_buf[..read_count].iter().any(|&b| b == NEWLINE);
         if ! contains_newline {
-            continue; // loop
-        }
-
-        // output bytes in a line-by-line manner
-        {
+            // add them to the write buffer
+            write_buf.extend_from_slice(&read_buf[..read_count]);
+        } else {
+            // output lines in the write buffer
             let mut outp = outp.lock().unwrap().lock(); // here, take mutex of outp
             for &b in &read_buf[..read_count] {
                 write_buf.push(b);
@@ -39,6 +39,7 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
                 }
             }
         }
+
         thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of outp
     }
 
