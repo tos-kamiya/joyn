@@ -25,7 +25,7 @@ a-2 0112233445566778899
 b-3 0a-3 0112233445566778899
 ```
 
-You can retrieve them line by line by running the bash script with command substitution and the cat command. However, the output of the second script will not be handled until the output of the first script is complete.
+You can retrieve them line by line by running the bash script with command substitution and the `cat` command. However, the output of the second script will not be handled until the output of the first script is complete.
 
 ```sh
 $ cat <(./char-by-char.sh a) <(./char-by-char.sh b)
@@ -37,7 +37,7 @@ b-2 0123456789
 b-3 0123456789
 ```
 
-On the other hand, the joyn command can be used to handle the output of the two scripts line-by-line, in the order in which each line is generated.
+On the other hand, the `joyn` command can be used to handle the output of the two scripts line-by-line, in the order in which each line is generated.
 
 ```sh
 $  joyn <(./char-by-char.sh a) <(./char-by-char.sh b)

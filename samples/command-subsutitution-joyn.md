@@ -31,7 +31,7 @@ b done.
 a done.
 ```
 
-When run two counters using bash process substitution and cat command, the output is the same as when the counters are run sequentially in order as the arguments of cat command.
+When run two counters using bash process substitution and the `cat` command, the output is the same as when the counters are run sequentially in order as the arguments of the `cat` command.
 
 ```sh
 $ cat <(./stepped-countup.sh a 10 2) <(./stepped-countup.sh b 9 3)
@@ -47,7 +47,7 @@ b 6
 b done.
 ```
 
-On the other hand, when the joyn command is used, the output is similar to when two counters are run in parallel.
+On the other hand, when the `joyn` command is used, the output is similar to when two counters are run in parallel.
 
 ```sh
 $ joyn <(./stepped-countup.sh a 10 2) <(./stepped-countup.sh b 9 3)
