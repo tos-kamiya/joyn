@@ -26,6 +26,10 @@ joyn <(command line 1) <(command line 2) ...
 
 ## Release history
 
+#### 0.2.2
+
+* fix: add code to avoid the potential race conditions
+
 #### 0.2.0
 
 * feat: new option --summary to print LOC of each input file on exit
