@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io;
-use std::io::{stdout, Stdout, Read, Write};
+use std::io::{stdout, Read, Stdout, Write};
 use std::sync::{Arc, Mutex};
 use std::thread;
 
@@ -22,13 +22,13 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
             break; // loop
         }
 
-        // output lines when the read bytes contains new-line chars
+        // if the read bytes do not contain new-line chars
         let contains_newline = read_buf[..read_count].iter().any(|&b| b == NEWLINE);
-        if ! contains_newline {
-            // add them to the write buffer
+        if !contains_newline {
+            // just add them to the write buffer
             write_buf.extend_from_slice(&read_buf[..read_count]);
         } else {
-            // output lines in the write buffer
+            // otherwise, output lines in the write buffer while adding the bytes to the write buffer
             let mut outp = outp.lock().unwrap().lock(); // here, take mutex of outp
             for &b in &read_buf[..read_count] {
                 write_buf.push(b);
@@ -44,12 +44,12 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
     }
 
     // when the last line does not terminated with a line number
-    if ! write_buf.is_empty() {
+    if !write_buf.is_empty() {
         assert!(*write_buf.last().unwrap() != NEWLINE);
 
         loc += 1;
 
-        // add a new-line char if the last line does not have it
+        // add a new-line char
         write_buf.push(NEWLINE);
 
         // then output the line
@@ -78,8 +78,8 @@ fn main() -> io::Result<()> {
     // open input files
     let mut inps = vec![];
     for input_file in args.input.iter() {
-        let f = File::open(input_file).unwrap_or_else(|_err|
-           panic!("Error: can not open file: {}", &input_file));
+        let f = File::open(input_file)
+            .unwrap_or_else(|_err| panic!("Error: can not open file: {}", &input_file));
         inps.push(f);
     }
 
@@ -104,7 +104,12 @@ fn main() -> io::Result<()> {
     // print summary (if requested)
     if args.summary {
         for (i, l) in locs.iter().enumerate() {
-            eprintln!("[Info] {} lines read from input #{}: {}", l, i + 1, &args.input[i]);
+            eprintln!(
+                "[Info] {} lines read from input #{}: {}",
+                l,
+                i + 1,
+                &args.input[i]
+            );
         }
     }
 
