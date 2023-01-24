@@ -62,3 +62,5 @@ a 8
 b done.
 a done.
 ```
+
+The command lines with `cat` and `joyn` shown above also differ in the timing of printing each line of the output. Please check by actually running the command lines.
