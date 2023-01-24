@@ -30,6 +30,7 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
                 loc += 1;
                 let mut outp = outp.lock().unwrap();
                 outp.write_all(&write_buf)?;
+                thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of `outp`(stdout)
                 write_buf.clear();
             }
         }
