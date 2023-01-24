@@ -26,6 +26,11 @@ joyn <(command line 1) <(command line 2) ...
 
 ## Release history
 
+#### 0.2.4
+
+* fix: reduce number of mutex operations
+* chore: enable LTO in release build
+
 #### 0.2.2
 
 * fix: add code to avoid the potential race conditions
