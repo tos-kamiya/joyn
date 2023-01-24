@@ -7,7 +7,7 @@ use std::thread;
 use clap::Parser;
 
 const READ_BUFFER_SIZE: usize = 64 * 1024;
-const EOL: u8 = b'\n';
+const NEWLINE: u8 = b'\n';
 
 fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<usize> {
     let mut read_buf = [b'\0'; READ_BUFFER_SIZE];
@@ -22,31 +22,37 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
             break; // loop
         }
 
+        let contains_newline = read_buf[..read_count].iter().any(|&b| b == NEWLINE);
+        if ! contains_newline {
+            continue; // loop
+        }
+
         // output bytes in a line-by-line manner
-        for b in &read_buf[..read_count] {
-            let b = *b;
-            write_buf.push(b);
-            if b == EOL {
-                loc += 1;
-                let mut outp = outp.lock().unwrap();
-                outp.write_all(&write_buf)?;
-                thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of `outp`(stdout)
-                write_buf.clear();
+        {
+            let mut outp = outp.lock().unwrap().lock(); // here, take mutex of outp
+            for &b in &read_buf[..read_count] {
+                write_buf.push(b);
+                if b == NEWLINE {
+                    loc += 1;
+                    outp.write_all(&write_buf)?;
+                    write_buf.clear();
+                }
             }
         }
+        thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of outp
     }
 
     // when the last line does not terminated with a line number
     if ! write_buf.is_empty() {
-        assert!(*write_buf.last().unwrap() != EOL);
+        assert!(*write_buf.last().unwrap() != NEWLINE);
 
         loc += 1;
 
         // add a new-line char if the last line does not have it
-        write_buf.push(EOL);
+        write_buf.push(NEWLINE);
 
         // then output the line
-        let mut outp = outp.lock().unwrap();
+        let mut outp = outp.lock().unwrap().lock();
         outp.write_all(&write_buf)?;
     }
 
