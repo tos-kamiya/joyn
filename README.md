@@ -31,6 +31,7 @@ joyn <(command line 1) <(command line 2) ...
 #### 0.2.4
 
 * fix: reduce number of mutex operations
+* fix: characters in the input files wre sometime missed
 * chore: enable LTO in release build
 
 #### 0.2.2
