@@ -10,18 +10,23 @@ const DEFAULT_READ_BUFFER_SIZE: usize = 64 * 1024;
 const NEWLINE: u8 = b'\n';
 
 fn find_positions_of<T>(slice: &[T], item: &T) -> Vec<usize>
-where T: PartialEq
+where
+    T: PartialEq,
 {
     let mut poss = vec![];
-    for i in 0..slice.len() {
-        if slice[i] == *item {
+    for (i, si) in slice.iter().enumerate() {
+        if *si == *item {
             poss.push(i);
         }
     }
-    return poss;
+    poss
 }
 
-fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File, read_buffer_size: usize) -> io::Result<usize> {
+fn line_read_and_write(
+    outp: Arc<Mutex<Stdout>>,
+    mut inp: File,
+    read_buffer_size: usize,
+) -> io::Result<usize> {
     assert!(read_buffer_size > 0);
 
     let mut read_buf = vec![b'\0'; read_buffer_size];
@@ -40,7 +45,7 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File, read_buffer_size
         // if the read bytes does not contain new-line chars, just add the bytes to write buffer
         let nl_poss = find_positions_of(read_buf, &NEWLINE);
         if nl_poss.is_empty() {
-            write_buf.extend_from_slice(&read_buf);
+            write_buf.extend_from_slice(read_buf);
             continue; // loop
         }
 
@@ -65,7 +70,8 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File, read_buffer_size
         loc += nl_poss.len();
     }
 
-    if !write_buf.is_empty() { // if the last line is not terminated by a new-line char
+    if !write_buf.is_empty() {
+        // if the last line is not terminated by a new-line char
         assert!(*write_buf.last().unwrap() != NEWLINE);
 
         // add a new-line char
