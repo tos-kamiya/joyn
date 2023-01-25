@@ -34,6 +34,10 @@ joyn <(command line 1) <(command line 2) ...
 
 ## Release history
 
+#### 0.4.0
+
+* feat: add option --info to replace option --summary. In addition to the number of lines displayed by --summary, print the buffer size when the input is a pipe
+
 #### 0.3.0
 
 * feat: new option --buffer-size
