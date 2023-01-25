@@ -37,6 +37,7 @@ joyn <(command line 1) <(command line 2) ...
 #### 0.4.0
 
 * feat: add option --info to replace option --summary. In addition to the number of lines displayed by --summary, print the buffer size when the input is a pipe
+* fix: reduce number of bytes copied (between buffers)
 
 #### 0.3.0
 
