@@ -6,11 +6,25 @@ use std::thread;
 
 use clap::Parser;
 
-const READ_BUFFER_SIZE: usize = 64 * 1024;
+const DEFAULT_READ_BUFFER_SIZE: usize = 64 * 1024;
 const NEWLINE: u8 = b'\n';
 
-fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<usize> {
-    let mut read_buf = [b'\0'; READ_BUFFER_SIZE];
+fn find_positions_of<T>(slice: &[T], item: &T) -> Vec<usize>
+where T: PartialEq
+{
+    let mut poss = vec![];
+    for i in 0..slice.len() {
+        if slice[i] == *item {
+            poss.push(i);
+        }
+    }
+    return poss;
+}
+
+fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File, read_buffer_size: usize) -> io::Result<usize> {
+    assert!(read_buffer_size > 0);
+
+    let mut read_buf = vec![b'\0'; read_buffer_size];
     let mut write_buf = vec![];
 
     let mut loc: usize = 0;
@@ -21,33 +35,38 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
         if read_count == 0 {
             break; // loop
         }
+        let read_buf = &read_buf[..read_count];
 
-        // if the read bytes do not contain new-line chars
-        let contains_newline = read_buf[..read_count].iter().any(|&b| b == NEWLINE);
-        if !contains_newline {
-            // just add them to the write buffer
-            write_buf.extend_from_slice(&read_buf[..read_count]);
-        } else {
-            // otherwise, output lines in the write buffer while adding the bytes to the write buffer
-            let mut outp = outp.lock().unwrap().lock(); // here, take mutex of outp
-            for &b in &read_buf[..read_count] {
-                write_buf.push(b);
-                if b == NEWLINE {
-                    loc += 1;
-                    outp.write_all(&write_buf)?;
-                    write_buf.clear();
-                }
-            }
+        // if the read bytes does not contain new-line chars, just add the bytes to write buffer
+        let nl_poss = find_positions_of(read_buf, &NEWLINE);
+        if nl_poss.is_empty() {
+            write_buf.extend_from_slice(&read_buf);
+            continue; // loop
         }
 
+        // otherwise,
+
+        // extract lines and add them to write buffer,
+        let the_last_nl_pos = nl_poss.last().unwrap();
+        let (lines, remains) = read_buf.split_at(the_last_nl_pos + 1);
+        write_buf.extend_from_slice(lines);
+
+        // output write buffer contents,
+        {
+            let mut outp = outp.lock().unwrap().lock(); // take mutex of outp
+            outp.write_all(&write_buf)?;
+        }
         thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of outp
+
+        // and make write buffer contains the remaining bytes
+        write_buf.clear();
+        write_buf.extend_from_slice(remains);
+
+        loc += nl_poss.len();
     }
 
-    // when the last line does not terminated with a line number
-    if !write_buf.is_empty() {
+    if !write_buf.is_empty() { // if the last line is not terminated by a new-line char
         assert!(*write_buf.last().unwrap() != NEWLINE);
-
-        loc += 1;
 
         // add a new-line char
         write_buf.push(NEWLINE);
@@ -55,6 +74,8 @@ fn line_read_and_write(outp: Arc<Mutex<Stdout>>, mut inp: File) -> io::Result<us
         // then output the line
         let mut outp = outp.lock().unwrap().lock();
         outp.write_all(&write_buf)?;
+
+        loc += 1;
     }
 
     Ok(loc)
@@ -70,6 +91,10 @@ struct Cli {
     /// Print LOC of each input file on exit
     #[arg(short, long)]
     summary: bool,
+
+    /// Buffer size
+    #[arg(short, long, default_value_t = DEFAULT_READ_BUFFER_SIZE)]
+    buffer_size: usize,
 }
 
 fn main() -> io::Result<()> {
@@ -90,7 +115,7 @@ fn main() -> io::Result<()> {
     let mut threads = vec![];
     for inp in inps {
         let outp = outp.clone();
-        let t = thread::spawn(move || line_read_and_write(outp, inp));
+        let t = thread::spawn(move || line_read_and_write(outp, inp, args.buffer_size));
         threads.push(t);
     }
 
