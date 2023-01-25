@@ -6,6 +6,9 @@ use std::thread;
 
 use clap::Parser;
 
+mod pipe_info;
+use pipe_info::get_pipe_buffer_size;
+
 const DEFAULT_READ_BUFFER_SIZE: usize = 64 * 1024;
 const NEWLINE: u8 = b'\n';
 
@@ -94,9 +97,9 @@ struct Cli {
     /// Input files
     input: Vec<String>,
 
-    /// Print LOC of each input file on exit
-    #[arg(short, long)]
-    summary: bool,
+    /// Print filename, buffer size (pipe), LOC of each input file
+    #[arg(long)]
+    info: bool,
 
     /// Buffer size
     #[arg(short, long, default_value_t = DEFAULT_READ_BUFFER_SIZE)]
@@ -112,6 +115,15 @@ fn main() -> io::Result<()> {
         let f = File::open(input_file)
             .unwrap_or_else(|_err| panic!("Error: can not open file: {}", &input_file));
         inps.push(f);
+    }
+
+    // print pipe buffer size (if requested)
+    if args.info {
+        for (i, inp) in inps.iter().enumerate() {
+            if let Some(pipe_size) = get_pipe_buffer_size(inp) {
+                eprintln!("[Info] #{} {}, pipe, bufsize {}", i + 1, &args.input[i], pipe_size);
+            }
+        }
     }
 
     // set up output
@@ -132,14 +144,14 @@ fn main() -> io::Result<()> {
         locs.push(loc);
     }
 
-    // print summary (if requested)
-    if args.summary {
+    // print loc (if requested)
+    if args.info {
         for (i, l) in locs.iter().enumerate() {
             eprintln!(
-                "[Info] {} lines read from input #{}: {}",
-                l,
+                "[Info] #{} {}, loc {}",
                 i + 1,
-                &args.input[i]
+                &args.input[i],
+                l
             );
         }
     }
