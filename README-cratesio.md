@@ -4,11 +4,7 @@ A command-line utility to join input files. Create a thread for each input file 
 
 **Keywords**: command line utility, pipe, parallel execution
 
-## Installation
-
-```sh
-cargo install joyn
-```
+**Homepage**: https://github.com/tos-kamiya/joyn/
 
 ## Usage
 
@@ -25,33 +21,3 @@ In the case of `bash` shell, this usage can be accomplished with a command line 
 ```sh
 joyn <(command line 1) <(command line 2) ...
 ```
-
-## Samples
-
-&rarr; [Difference between command substitution joined with cat and joined with joyn](samples/command-subsutitution-joyn.md)
-
-&rarr; [Line-oriented handling](samples/line-oriented.md)
-
-## Release history
-
-#### 0.3.0
-
-* feat: new option --buffer-size
-
-#### 0.2.4
-
-* fix: reduce number of mutex operations
-* fix: characters in the input files were sometime missed
-* chore: enable LTO in release build
-
-#### 0.2.2
-
-* fix: add code to avoid the potential race conditions
-
-#### 0.2.0
-
-* feat: new option --summary to print LOC of each input file on exit
-
-#### 0.1.0
-
-* First release
