@@ -1,7 +1,7 @@
 use std::fs::File;
 
 #[cfg(target_os = "linux")]
-use { std::mem, std::os::unix::io::AsRawFd };
+use {std::mem, std::os::unix::io::AsRawFd};
 
 #[cfg(target_os = "linux")]
 pub fn get_pipe_buffer_size(inp: &File) -> Option<usize> {
@@ -24,4 +24,3 @@ pub fn get_pipe_buffer_size(inp: &File) -> Option<usize> {
 pub fn get_pipe_buffer_size(inp: &File) -> Option<usize> {
     None
 }
-

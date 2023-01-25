@@ -79,7 +79,7 @@ fn line_read_and_write(
 
         let mut outp = outp.lock().unwrap().lock();
         outp.write_all(&buf[..buf_size])?; // output the line
-        outp.write_all(&[NEWLINE])?; // and a newline char
+        outp.write_all(&[NEWLINE])?; // and a newline
 
         loc += 1;
     }
@@ -118,7 +118,12 @@ fn main() -> io::Result<()> {
     if args.info {
         for (i, inp) in inps.iter().enumerate() {
             if let Some(pipe_size) = get_pipe_buffer_size(inp) {
-                eprintln!("[Info] #{} {}, pipe, bufsize {}", i + 1, &args.input[i], pipe_size);
+                eprintln!(
+                    "[Info] #{} {}, pipe, bufsize {}",
+                    i + 1,
+                    &args.input[i],
+                    pipe_size
+                );
             }
         }
     }
@@ -144,12 +149,7 @@ fn main() -> io::Result<()> {
     // print loc (if requested)
     if args.info {
         for (i, l) in locs.iter().enumerate() {
-            eprintln!(
-                "[Info] #{} {}, loc {}",
-                i + 1,
-                &args.input[i],
-                l
-            );
+            eprintln!("[Info] #{} {}, loc {}", i + 1, &args.input[i], l);
         }
     }
 
