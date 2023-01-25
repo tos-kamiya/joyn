@@ -41,19 +41,19 @@ fn line_read_and_write(
     let mut loc: usize = 0;
 
     loop {
-        // ensure buffer is large enough to read another bytes
+        // ensure the buffer is large enough to read another (read_buffer_size) bytes
         if buf.len() < buf_size + read_buffer_size {
             buf.resize(buf_size + read_buffer_size, b'\0');
         }
 
-        // read bytes from the input into buffer
+        // read bytes from the input into the buffer
         let read_count = inp.read(&mut buf[buf_size..])?;
         buf_size += read_count;
-        if read_count == 0 {
+        if read_count == 0 { // if reached EOF
             break; // loop
         }
 
-        // if no lines found in buffer, continue reading
+        // if no line can be extracted from the buffer, continue reading
         let (nl_count, last_nl_pos) = find_lines(&buf[..buf_size], &NEWLINE);
         if nl_count == 0 {
             continue; // loop
@@ -66,14 +66,14 @@ fn line_read_and_write(
         }
         thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of outp
 
-        // and remove the lines from buffer
+        // and remove the lines from the buffer
         buf.copy_within(last_nl_pos + 1.., 0);
         buf_size -= last_nl_pos + 1;
 
         loc += nl_count;
     }
 
-    // if the last line does not ends with a newline
+    // if the last line of the input file does not ends with a newline
     if buf_size > 0 {
         assert!(buf[buf_size - 1] != NEWLINE);
 
