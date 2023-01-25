@@ -12,17 +12,20 @@ use pipe_info::get_pipe_buffer_size;
 const DEFAULT_READ_BUFFER_SIZE: usize = 64 * 1024;
 const NEWLINE: u8 = b'\n';
 
-fn find_positions_of<T>(slice: &[T], item: &T) -> Vec<usize>
+fn find_lines<T>(slice: &[T], newline: &T) -> (usize, usize)
 where
     T: PartialEq,
 {
-    let mut poss = vec![];
+    let mut nl_count: usize = 0;
+    let mut last_nl_pos: usize = 0;
+
     for (i, si) in slice.iter().enumerate() {
-        if *si == *item {
-            poss.push(i);
+        if *si == *newline {
+            nl_count += 1;
+            last_nl_pos = i;
         }
     }
-    poss
+    (nl_count, last_nl_pos)
 }
 
 fn line_read_and_write(
@@ -51,26 +54,23 @@ fn line_read_and_write(
         }
 
         // if no lines found in buffer, continue reading
-        let nl_poss = find_positions_of(&buf[..buf_size], &NEWLINE);
-        if nl_poss.is_empty() {
+        let (nl_count, last_nl_pos) = find_lines(&buf[..buf_size], &NEWLINE);
+        if nl_count == 0 {
             continue; // loop
         }
 
-        // otherwise,
-
         // output the lines
-        let the_last_nl_pos = *nl_poss.last().unwrap();
         {
             let mut outp = outp.lock().unwrap().lock(); // take mutex of outp
-            outp.write_all(&buf[..the_last_nl_pos + 1])?;
+            outp.write_all(&buf[..last_nl_pos + 1])?;
         }
         thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of outp
 
         // and remove the lines from buffer
-        buf.copy_within(the_last_nl_pos + 1.., 0);
-        buf_size -= the_last_nl_pos + 1;
+        buf.copy_within(last_nl_pos + 1.., 0);
+        buf_size -= last_nl_pos + 1;
 
-        loc += nl_poss.len();
+        loc += nl_count;
     }
 
     // if the last line does not ends with a newline
