@@ -32,57 +32,54 @@ fn line_read_and_write(
 ) -> io::Result<usize> {
     assert!(read_buffer_size > 0);
 
-    let mut read_buf = vec![b'\0'; read_buffer_size];
-    let mut write_buf = vec![];
+    let mut buf = vec![b'\0'; read_buffer_size];
+    let mut buf_size: usize = 0;
 
     let mut loc: usize = 0;
 
     loop {
-        // read some bytes from the input
-        let read_count = inp.read(&mut read_buf[..])?;
+        // ensure buffer is large enough to read another bytes
+        if buf.len() < buf_size + read_buffer_size {
+            buf.resize(buf_size + read_buffer_size, b'\0');
+        }
+
+        // read bytes from the input into buffer
+        let read_count = inp.read(&mut buf[buf_size..])?;
+        buf_size += read_count;
         if read_count == 0 {
             break; // loop
         }
-        let read_buf = &read_buf[..read_count];
 
-        // if the read bytes does not contain new-line chars, just add the bytes to write buffer
-        let nl_poss = find_positions_of(read_buf, &NEWLINE);
+        // if no lines found in buffer, continue reading
+        let nl_poss = find_positions_of(&buf[..buf_size], &NEWLINE);
         if nl_poss.is_empty() {
-            write_buf.extend_from_slice(read_buf);
             continue; // loop
         }
 
         // otherwise,
 
-        // extract lines and add them to write buffer,
-        let the_last_nl_pos = nl_poss.last().unwrap();
-        let (lines, remains) = read_buf.split_at(the_last_nl_pos + 1);
-        write_buf.extend_from_slice(lines);
-
-        // output write buffer contents,
+        // output the lines
+        let the_last_nl_pos = *nl_poss.last().unwrap();
         {
             let mut outp = outp.lock().unwrap().lock(); // take mutex of outp
-            outp.write_all(&write_buf)?;
+            outp.write_all(&buf[..the_last_nl_pos + 1])?;
         }
         thread::yield_now(); // to avoid race conditions; give other threads a chance to take the mutex of outp
 
-        // and make write buffer contains the remaining bytes
-        write_buf.clear();
-        write_buf.extend_from_slice(remains);
+        // and remove the lines from buffer
+        buf.copy_within(the_last_nl_pos + 1.., 0);
+        buf_size -= the_last_nl_pos + 1;
 
         loc += nl_poss.len();
     }
 
-    if !write_buf.is_empty() {
-        // if the last line is not terminated by a new-line char
-        assert!(*write_buf.last().unwrap() != NEWLINE);
+    // if the last line does not ends with a newline
+    if buf_size > 0 {
+        assert!(buf[buf_size - 1] != NEWLINE);
 
-        // add a new-line char
-        write_buf.push(NEWLINE);
-
-        // then output the line
         let mut outp = outp.lock().unwrap().lock();
-        outp.write_all(&write_buf)?;
+        outp.write_all(&buf[..buf_size])?; // output the line
+        outp.write_all(&[NEWLINE])?; // and a newline char
 
         loc += 1;
     }
