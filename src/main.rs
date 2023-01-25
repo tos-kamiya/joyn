@@ -105,6 +105,9 @@ struct Cli {
 
 fn main() -> io::Result<()> {
     let args = Cli::parse();
+    if args.buffer_size == 0 {
+        panic!("Error: option --buffer-size's value must be > 0");
+    }
 
     // open input files
     let mut inps = vec![];
