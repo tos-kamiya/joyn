@@ -13,7 +13,7 @@ use pipe_info::get_pipe_buffer_size;
 const DEFAULT_READ_BUFFER_SIZE: usize = 64 * 1024;
 const NEWLINE: u8 = b'\n';
 
-fn find_lines<T>(slice: &[T], newline: &T) -> (usize, usize)
+fn check_item_occurrences<T>(slice: &[T], item: &T) -> (usize, usize)
 where
     T: PartialEq,
 {
@@ -21,7 +21,7 @@ where
     let mut last_nl_pos: usize = 0;
 
     for (i, si) in slice.iter().enumerate() {
-        if *si == *newline {
+        if *si == *item {
             nl_count += 1;
             last_nl_pos = i;
         }
@@ -56,7 +56,7 @@ fn line_read_and_write(
         read_count += c;
 
         // if no line can be extracted from the buffer, continue reading
-        let (nl_count, last_nl_pos) = find_lines(&buf[..read_count], &NEWLINE);
+        let (nl_count, last_nl_pos) = check_item_occurrences(&buf[..read_count], &NEWLINE);
         if nl_count == 0 {
             continue; // loop
         }
@@ -119,7 +119,7 @@ fn main() -> io::Result<()> {
         inps.push(f);
     }
 
-    // print pipe buffer size (if requested)
+    // print pipe buffer size of each input file (if requested)
     if args.info {
         for (i, inp) in inps.iter().enumerate() {
             if let Some(pipe_size) = get_pipe_buffer_size(inp) {
@@ -151,7 +151,7 @@ fn main() -> io::Result<()> {
         locs.push(loc);
     }
 
-    // print loc (if requested)
+    // print loc of each input file (if requested)
     if args.info {
         for (i, l) in locs.iter().enumerate() {
             eprintln!("[Info] #{} {}, loc {}", i + 1, &args.input[i], l);
