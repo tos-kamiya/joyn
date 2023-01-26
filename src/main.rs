@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::fs::File;
 use std::io;
 use std::io::{stdout, Read, Stdout, Write};
@@ -36,25 +37,26 @@ fn line_read_and_write(
     assert!(read_buffer_size > 0);
 
     let mut buf = vec![b'\0'; read_buffer_size];
-    let mut buf_size: usize = 0;
+    let mut read_count: usize = 0;
 
     let mut loc: usize = 0;
 
     loop {
         // ensure the buffer is large enough to read another (read_buffer_size) bytes
-        if buf.len() < buf_size + read_buffer_size {
-            buf.resize(buf_size + read_buffer_size, b'\0');
+        let bl = buf.len();
+        if bl - read_count < max(bl / 2, read_buffer_size) {
+            buf.resize(bl + max(bl / 2, read_buffer_size), b'\0');
         }
 
         // read bytes from the input into the buffer
-        let read_count = inp.read(&mut buf[buf_size..])?;
-        buf_size += read_count;
-        if read_count == 0 { // if reached EOF
+        let c = inp.read(&mut buf[read_count..])?;
+        if c == 0 { // if reached EOF
             break; // loop
         }
+        read_count += c;
 
         // if no line can be extracted from the buffer, continue reading
-        let (nl_count, last_nl_pos) = find_lines(&buf[..buf_size], &NEWLINE);
+        let (nl_count, last_nl_pos) = find_lines(&buf[..read_count], &NEWLINE);
         if nl_count == 0 {
             continue; // loop
         }
@@ -68,17 +70,17 @@ fn line_read_and_write(
 
         // and remove the lines from the buffer
         buf.copy_within(last_nl_pos + 1.., 0);
-        buf_size -= last_nl_pos + 1;
+        read_count -= last_nl_pos + 1;
 
         loc += nl_count;
     }
 
-    // if the last line of the input file does not ends with a newline
-    if buf_size > 0 {
-        assert!(buf[buf_size - 1] != NEWLINE);
+    // if the last line of the input file does not end with a newline
+    if read_count > 0 {
+        assert!(*buf[..read_count].last().unwrap() != NEWLINE);
 
         let mut outp = outp.lock().unwrap().lock();
-        outp.write_all(&buf[..buf_size])?; // output the line
+        outp.write_all(&buf[..read_count])?; // output the line
         outp.write_all(&[NEWLINE])?; // and a newline
 
         loc += 1;
